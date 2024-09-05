@@ -23,6 +23,7 @@ import static com.google.inject.Asserts.assertContains;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static org.junit.Assert.assertArrayEquals;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -554,11 +555,29 @@ public class CheckedProviderTest extends TestCase {
           });
       fail();
     } catch (CreationException expected) {
-      assertEquals(
-          RemoteProviderWithExtraMethod.class.getName()
-              + " may not declare any new methods, but declared "
-              + RemoteProviderWithExtraMethod.class.getDeclaredMethods()[0].toGenericString(),
-          Iterables.getOnlyElement(expected.getErrorMessages()).getMessage());
+      String expectedMessage = RemoteProviderWithExtraMethod.class.getName()
+          + " may not declare any new methods, but declared "
+          + RemoteProviderWithExtraMethod.class.getDeclaredMethods()[0].toGenericString();
+          
+      String actualMessage = Iterables.getOnlyElement(expected.getErrorMessages()).getMessage();
+
+      if (actualMessage.contains("throws")) {
+        String[] expectedStrs = expectedMessage.split("throws\\s*");
+        String[] actualStrs = actualMessage.split("throws\\s*");
+
+        assertEquals(expectedStrs[0], actualStrs[0]);
+
+        String[] expectedExceptions = expectedStrs.length > 1 ? expectedStrs[1].split(",\\s*") : new String[0];
+        String[] actualExceptions = actualStrs.length > 1 ? actualStrs[1].split(",\\s*") : new String[0];
+
+        Arrays.sort(expectedExceptions);
+        Arrays.sort(actualExceptions);
+
+        assertArrayEquals(expectedExceptions, actualExceptions);
+      }
+      else {
+        assertEquals(expectedMessage, actualMessage);
+      }
     }
   }
 
